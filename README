@@ -29,7 +29,7 @@ To execute diff.sql
   
 To run model rebuild and apply database changes to database 
   {{{
-  symfony propel-update-all frontend
+  symfony propel-build-all-diff frontend
   }}}
 
 == Changelog ==
@@ -40,7 +40,7 @@ To run model rebuild and apply database changes to database
  
 === 0.1.2 ===
 
- * added task propel-update-all
+ * added task propel-build-all
  * fixed problem with short open tags
  * fixed problem with "foreign key constraint fails" error during diff.sql execution
  

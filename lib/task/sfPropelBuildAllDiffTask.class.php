@@ -43,7 +43,7 @@ EOF;
 
     $task = new sfPropelBuildModelTask($this->dispatcher, $this->formatter);
     $task->setCommandApplication($this->commandApplication);
-    $task->execute();
+    $task->run();
   }
 }
 
