@@ -13,13 +13,6 @@ Currently it handles:
 
 Plugin is in beta state now. It is tested only for mysql. You can discuss it at [http://www.symfony-project.org/forum/index.php/t/10679/ thread in symfony forum]
 
-== Installation ==
-
-  {{{
-  symfony plugin-install http://plugins.symfony-project.com/sfPropelSqlDiffPlugin
-  symfony cc
-  }}}
-
 == Usage ==
 
 After making changes in schema.yml
