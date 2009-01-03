@@ -18,7 +18,7 @@
 	</lead>
 	<date>2009-01-03</date>
 	<version>
-		<release>0.1.5</release>
+		<release>0.1.6</release>
 		<api>0.1.0</api>
 	</version>
 	<stability>
@@ -65,7 +65,7 @@
 	<changelog>
 		<release>
 			<version>
-				<release>0.1.5</release>
+				<release>0.1.6</release>
 				<api>0.1.0</api>
 			</version>
 			<stability>
@@ -76,7 +76,7 @@
 			<date>2009-01-03</date>
 			<license>MIT</license>
 			<notes>
-				* symfony 1.2 support
+				* fixed bug in propel:build-all-diff task
 		    </notes>
 		</release>
 	</changelog>
