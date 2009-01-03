@@ -12,14 +12,13 @@ class dbInfo {
     $stmt->execute();
     $stmt->setFetchMode(PDO::FETCH_NUM);
 
-//    if($stmt->getRecordCount () ==0) return false;
+    if($stmt->rowCount()==0) return false;
     while($row = $stmt->fetch()) {
         $name = $row[0];
         $this->tables[$name] = array();
     };
 
     foreach($this->tables as $table => $null) {
-//      $rs = $con->executeQuery("show create table `".$table."`");
       $stmt = $con->prepare("show create table `".$table."`");
       $stmt->execute();
       $row = $stmt->fetch();

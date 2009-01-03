@@ -38,7 +38,7 @@ EOF;
     $buildSql->execute($arguments, $options);
 
     $filename = sfConfig::get('sf_data_dir').'/sql/diff.sql';
-    $this->logSection("propel-diff", "executing file $filename");
+    $this->logSection("propel-sql-diff", "executing file $filename");
     $i = new dbInfo();
     $i->executeSql(file_get_contents($filename));
   }

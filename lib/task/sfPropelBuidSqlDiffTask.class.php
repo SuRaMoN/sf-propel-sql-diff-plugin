@@ -39,7 +39,7 @@ EOF;
     $buildSql->setCommandApplication($this->commandApplication);
     $buildSql->run();
 
-    $this->logSection("propel-diff", "building database patch");
+    $this->logSection("propel-sql-diff", "building database patch");
 
     $configuration = ProjectConfiguration::getApplicationConfiguration($arguments['application'], $options['env'], true);
     $databaseManager = new sfDatabaseManager($configuration);
@@ -53,7 +53,7 @@ EOF;
 
     $filename = sfConfig::get('sf_data_dir').'/sql/diff.sql';
     if($diff=='') {
-      $this->logSection("propel-diff", "no difference found");
+      $this->logSection("propel-sql-diff", "no difference found");
     }
     $this->logSection('propel-sql-diff', "writing file $filename");
     file_put_contents($filename, $diff);
