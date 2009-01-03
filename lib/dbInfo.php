@@ -7,18 +7,23 @@ class dbInfo {
   function loadFromDb() {
     $con = Propel::getConnection();
 
-    $rs = $con->executeQuery("SHOW TABLES LIKE '%'");
-    $rs->setFetchmode(ResultSet::FETCHMODE_NUM);
-    if($rs->getRecordCount() ==0) return false;
-    while($rs->next()) {
-      $name = $rs->getString(1);
-      $this->tables[$name] = array();
+    
+    $stmt = $con->prepare("SHOW TABLES LIKE '%'");
+    $stmt->execute();
+    $stmt->setFetchMode(PDO::FETCH_NUM);
+
+//    if($stmt->getRecordCount () ==0) return false;
+    while($row = $stmt->fetch()) {
+        $name = $row[0];
+        $this->tables[$name] = array();
     };
 
     foreach($this->tables as $table => $null) {
-      $rs = $con->executeQuery("show create table `".$table."`");
-      $rs->next();
-      $create_table = $rs->getString("Create Table");
+//      $rs = $con->executeQuery("show create table `".$table."`");
+      $stmt = $con->prepare("show create table `".$table."`");
+      $stmt->execute();
+      $row = $stmt->fetch();
+      $create_table = $row[1];
       $this->getTableInfoFromCreate($create_table);
     }
 
@@ -256,7 +261,10 @@ class dbInfo {
   
   public function executeQuery($query) {
   	$con = Propel::getConnection();
-  	$con->executeUpdate($query);
+    
+    $stmt = $con->prepare($query);
+    $stmt->execute();
+    return $stmt;
   }
   
   
