@@ -44,6 +44,14 @@ EOF;
     $task = new sfPropelBuildModelTask($this->dispatcher, $this->formatter);
     $task->setCommandApplication($this->commandApplication);
     $task->run();
+    
+    $task = new sfPropelBuildFormsTask($this->dispatcher, $this->formatter);
+    $task->setCommandApplication($this->commandApplication);
+    $task->run();
+    
+    $task = new sfPropelBuildFiltersTask($this->dispatcher, $this->formatter);
+    $task->setCommandApplication($this->commandApplication);
+    $task->run();
   }
 }
 
