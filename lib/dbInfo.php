@@ -149,11 +149,8 @@ class dbInfo {
       if($tabledata['fkeys']) foreach($tabledata['fkeys'] as $fkeyname=>$data) {
         $mycode = $data['code'];
         $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
-        $otherdata = @$this->tables[$tablename]['fkeys'][$otherfkname];
-        if($data['ref_table']!=$otherdata['ref_table']
-        or $data['ref_field']!=$otherdata['ref_field']
-        or $data['on_delete']!=$otherdata['on_delete']
-        or $data['on_update']!=$otherdata['on_update'] ) {
+        $othercode = @$this->tables[$tablename]['fkeys'][$otherfkname]['code'];
+        if($mycode && !$othercode) {
           $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
         };
       };
