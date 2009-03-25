@@ -43,15 +43,19 @@ class dbInfo {
   }
 
   public function getTableInfoFromCreate($create_table) {
-    preg_match("/^\s*create table `?([^\s`]+)`?\s+\((.*)\)[^\)]*$/mis", $create_table, $matches);
+    preg_match("/^\s*create table `?([^\s`]+)`?\s+\((.*)\)([^\)]*)$/mis", $create_table, $matches);
     $table = $matches[1];
     $code = $matches[2];
+    $table_info = $matches[3];
 
     $this->tables[$table]['create'] = $create_table;
     $this->tables[$table]['fields'] = array();
     $this->tables[$table]['keys'] = array();
     $this->tables[$table]['fkeys'] = array();
-
+    
+    preg_match('/type=(\w+)/i', $table_info, $matches);
+    $this->tables[$table]['type'] = strtolower($matches[1]);
+    
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
     foreach($matches[1] as $key=>$value) {
       $this->getInfoFromPart($table, trim($value));
@@ -112,6 +116,10 @@ class dbInfo {
       throw new Exception("can't parse line '$part' in table $table");
     }
   }
+  
+  function tableSupportsFkeys($tabletype) {
+      return !in_array($tabletype, array('myisam', 'ndbcluster'));
+  }
 
 
   function getDiffWith(dbInfo $db_info2) {
@@ -146,13 +154,15 @@ class dbInfo {
         };
       };
 
-      if($tabledata['fkeys']) foreach($tabledata['fkeys'] as $fkeyname=>$data) {
-        $mycode = $data['code'];
-        $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
-        $othercode = @$this->tables[$tablename]['fkeys'][$otherfkname]['code'];
-        if($mycode && !$othercode) {
-          $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
-        };
+      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) { 
+        foreach($tabledata['fkeys'] as $fkeyname=>$data) {
+          $mycode = $data['code'];
+          $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
+          $othercode = @$this->tables[$tablename]['fkeys'][$otherfkname]['code'];
+          if($mycode && !$othercode) {
+            $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
+          };
+        }
       };
     };
     
@@ -164,26 +174,28 @@ class dbInfo {
       }
 
       //drop, alter foreign key
-      if($tabledata['fkeys']) foreach($tabledata['fkeys'] as $fkeyname=>$data) {
-        $mycode = $data['code'];
-        $otherfkname = $db_info2->get_fk_name_by_field($tablename, $data['field']);
-        $othercode = @$db_info2->tables[$tablename]['fkeys'][$otherfkname]['code'];
-        if($mycode and !$othercode) {
-          $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
-        } else {
-          $data2 = $db_info2->tables[$tablename]['fkeys'][$otherfkname];
-          if ($data['ref_table'] != $data2['ref_table'] ||
-          $data['ref_field'] != $data2['ref_field'] ||
-          $data['on_delete'] != $data2['on_delete'] ||
-          $data['on_update'] != $data2['on_update']) {
-            if($this->debug) {
-              $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
-            }
+      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) { 
+        foreach($tabledata['fkeys'] as $fkeyname=>$data) {
+          $mycode = $data['code'];
+          $otherfkname = $db_info2->get_fk_name_by_field($tablename, $data['field']);
+          $othercode = @$db_info2->tables[$tablename]['fkeys'][$otherfkname]['code'];
+          if($mycode and !$othercode) {
             $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
-            $diff_sql .= "ALTER TABLE `$tablename` ADD {$othercode};\n";
-          }
+          } else {
+            $data2 = $db_info2->tables[$tablename]['fkeys'][$otherfkname];
+            if ($data['ref_table'] != $data2['ref_table'] ||
+            $data['ref_field'] != $data2['ref_field'] ||
+            $data['on_delete'] != $data2['on_delete'] ||
+            $data['on_update'] != $data2['on_update']) {
+              if($this->debug) {
+                $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
+              }
+              $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
+              $diff_sql .= "ALTER TABLE `$tablename` ADD {$othercode};\n";
+            }
+          };
         };
-      };
+      }
 
       //drop, alter index
       if($tabledata['keys']) foreach($tabledata['keys'] as $field=>$fielddata) {
