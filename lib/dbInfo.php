@@ -53,8 +53,9 @@ class dbInfo {
     $this->tables[$table]['keys'] = array();
     $this->tables[$table]['fkeys'] = array();
     
-    preg_match('/type=(\w+)/i', $table_info, $matches);
-    $this->tables[$table]['type'] = strtolower($matches[1]);
+    if(preg_match('/type=(\w+)/i', $table_info, $matches)) {
+        $this->tables[$table]['type'] = strtolower($matches[1]);
+    }
     
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
     foreach($matches[1] as $key=>$value) {
