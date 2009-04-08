@@ -4,10 +4,7 @@ class dbInfo {
   public $tables;
   public $debug = true;
 
-  function loadFromDb() {
-    $con = Propel::getConnection();
-
-    
+  function loadFromDb($con) {
     $stmt = $con->prepare("SHOW TABLES LIKE '%'");
     $stmt->execute();
     $stmt->setFetchMode(PDO::FETCH_NUM);
@@ -252,10 +249,10 @@ class dbInfo {
     return null;
   }
   
-  public function executeSql($sql) {
+  public function executeSql($sql, $connection) {
   	$queries = $this->explodeSql($sql);
   	foreach($queries as $query) {
-  	  $this->executeQuery($query);
+  	  $this->executeQuery($query, $connection);
   	}
   }
   
@@ -268,10 +265,8 @@ class dbInfo {
     return $result;    
   }
   
-  public function executeQuery($query) {
-  	$con = Propel::getConnection();
-    
-    $stmt = $con->prepare($query);
+  public function executeQuery($query, $connection) {
+    $stmt = $connection->prepare($query);
     $stmt->execute();
     return $stmt;
   }

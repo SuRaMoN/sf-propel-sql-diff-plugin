@@ -9,14 +9,12 @@ class sfPropelInsertSqlDiffTask extends sfPropelBaseTask
    */
   protected function configure()
   {
-    $this->addArguments(array(
-    new sfCommandArgument('application', sfCommandArgument::REQUIRED, 'The application name'),
-    ));
-
     $this->addOptions(array(
-    new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
+      new sfCommandOption('application', null, sfCommandOption::PARAMETER_REQUIRED, 'The application name'),
+      new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
+      new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
     ));
-
+      
     $this->aliases = array('propel-insert-sql-diff');
     $this->namespace = 'propel';
     $this->name = 'insert-sql-diff';
@@ -33,14 +31,19 @@ EOF;
    */
   protected function execute($arguments = array(), $options = array())
   {
+    $optionsCmdline = array();
+    if($options['application']) $optionsCmdline[] = '--application='.$options['application'];
+    if($options['env']) $optionsCmdline[] = '--env='.$options['env'];
+    if($options['connection']) $optionsCmdline[] = '--connection='.$options['connection'];
+    
     $buildSql = new sfPropelBuildSqlDiffTask($this->dispatcher, $this->formatter);
     $buildSql->setCommandApplication($this->commandApplication);
-    $buildSql->execute($arguments, $options);
+    $buildSql->run(array(), $optionsCmdline);
 
     $filename = sfConfig::get('sf_data_dir').'/sql/diff.sql';
     $this->logSection("propel-sql-diff", "executing file $filename");
     $i = new dbInfo();
-    $i->executeSql(file_get_contents($filename));
+    $i->executeSql(file_get_contents($filename), Propel::getConnection($options['connection']));
   }
 }
 

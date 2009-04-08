@@ -9,14 +9,12 @@ class sfPropelBuildAllDiffTask extends sfPropelBaseTask
    */
   protected function configure()
   {
-    $this->addArguments(array(
-      new sfCommandArgument('application', sfCommandArgument::REQUIRED, 'The application name'),
-    ));
-
     $this->addOptions(array(
+      new sfCommandOption('application', null, sfCommandOption::PARAMETER_REQUIRED, 'The application name'),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
+      new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
     ));
-    
+          
     $this->aliases = array('propel-build-all-diff');
     $this->namespace = 'propel';
     $this->name = 'build-all-diff';
@@ -37,9 +35,14 @@ EOF;
    */
   protected function execute($arguments = array(), $options = array())
   {
+    $optionsCmdline = array();
+    if($options['application']) $optionsCmdline[] = '--application='.$options['application'];
+    if($options['env']) $optionsCmdline[] = '--env='.$options['env'];
+    if($options['connection']) $optionsCmdline[] = '--connection='.$options['connection'];
+    
     $task = new sfPropelInsertSqlDiffTask($this->dispatcher, $this->formatter);
     $task->setCommandApplication($this->commandApplication);
-    $task->execute($arguments, $options);
+    $task->run(array(), $optionsCmdline);
 
     $task = new sfPropelBuildModelTask($this->dispatcher, $this->formatter);
     $task->setCommandApplication($this->commandApplication);

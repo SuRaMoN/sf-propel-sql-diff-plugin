@@ -9,14 +9,12 @@ class sfPropelBuildSqlDiffTask extends sfPropelBaseTask
    */
   protected function configure()
   {
-    $this->addArguments(array(
-      new sfCommandArgument('application', sfCommandArgument::REQUIRED, 'The application name'),
-    ));
-
     $this->addOptions(array(
+      new sfCommandOption('application', null, sfCommandOption::PARAMETER_REQUIRED, 'The application name'),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
+      new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
     ));
-    
+          
     $this->aliases = array('propel-build-sql-diff');
     $this->namespace = 'propel';
     $this->name = 'build-sql-diff';
@@ -41,11 +39,11 @@ EOF;
 
     $this->logSection("propel-sql-diff", "building database patch");
 
-    $configuration = ProjectConfiguration::getApplicationConfiguration($arguments['application'], $options['env'], true);
-    $databaseManager = new sfDatabaseManager($configuration);
-    
+    $databaseManager = new sfDatabaseManager($this->configuration);
+    $connection = $databaseManager->getDatabase($options['connection'] ? $options['connection'] : null)->getConnection();
+        
     $i = new dbInfo();
-    $i->loadFromDb();
+    $i->loadFromDb(Propel::getConnection($options['connection']));
 
     $i2 = new dbInfo();
     $i2->loadAllFilesInDir(sfConfig::get('sf_data_dir').'/sql');
