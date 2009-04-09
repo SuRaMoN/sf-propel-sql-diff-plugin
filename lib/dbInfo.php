@@ -52,6 +52,8 @@ class dbInfo {
     
     if(preg_match('/type=(\w+)/i', $table_info, $matches)) {
         $this->tables[$table]['type'] = strtolower($matches[1]);
+    } else {
+        $this->tables[$table]['type'] = '';
     }
     
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
