@@ -33,15 +33,15 @@ EOF;
    */
   protected function execute($arguments = array(), $options = array())
   {
+    $databaseManager = new sfDatabaseManager($this->configuration);
+    $connection = $databaseManager->getDatabase($options['connection'] ? $options['connection'] : null)->getConnection();
+        
     $buildSql = new sfPropelBuildSqlTask($this->dispatcher, $this->formatter);
     $buildSql->setCommandApplication($this->commandApplication);
     $buildSql->run();
 
     $this->logSection("propel-sql-diff", "building database patch");
-
-    $databaseManager = new sfDatabaseManager($this->configuration);
-    $connection = $databaseManager->getDatabase($options['connection'] ? $options['connection'] : null)->getConnection();
-        
+    
     $i = new dbInfo();
     $i->loadFromDb(Propel::getConnection($options['connection']));
 
