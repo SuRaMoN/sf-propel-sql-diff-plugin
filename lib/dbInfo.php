@@ -1,7 +1,7 @@
 <?php
 
 class dbInfo {
-  public $tables;
+  public $tables = array();
   public $debug = true;
 
   function loadFromDb($con) {

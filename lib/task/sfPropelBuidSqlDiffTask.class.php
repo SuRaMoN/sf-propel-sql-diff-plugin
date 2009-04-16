@@ -40,20 +40,30 @@ EOF;
     $buildSql->setCommandApplication($this->commandApplication);
     $buildSql->run();
 
-    $this->logSection("propel-sql-diff", "building database patch");
+    $this->logSection("sql-diff", "building database patch");
     
     $i = new dbInfo();
     $i->loadFromDb(Propel::getConnection($options['connection']));
 
     $i2 = new dbInfo();
-    $i2->loadAllFilesInDir(sfConfig::get('sf_data_dir').'/sql');
+    
+    $sqlDir = sfConfig::get('sf_data_dir').'/sql';
+    $dbmap = file("$sqlDir/sqldb.map");
+    foreach($dbmap as $mapline) {
+        if($mapline[0]=='#') continue; //it is a comment
+        list($sqlfile, $dbname) = explode('=', trim($mapline));
+        if($dbname == $options['connection']) {
+            $i2->loadFromFile("$sqlDir/$sqlfile");
+        }
+    }
+    
     $diff = $i->getDiffWith($i2);
 
-    $filename = sfConfig::get('sf_data_dir').'/sql/diff.sql';
+    $filename = sfConfig::get('sf_data_dir')."/sql/{$options['connection']}.diff.sql";
     if($diff=='') {
-      $this->logSection("propel-sql-diff", "no difference found");
+      $this->logSection("sql-diff", "no difference found");
     }
-    $this->logSection('propel-sql-diff', "writing file $filename");
+    $this->logSection('sql-diff', "writing file $filename");
     file_put_contents($filename, $diff);
 
   }

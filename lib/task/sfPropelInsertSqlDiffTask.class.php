@@ -40,8 +40,8 @@ EOF;
     $buildSql->setCommandApplication($this->commandApplication);
     $buildSql->run(array(), $optionsCmdline);
 
-    $filename = sfConfig::get('sf_data_dir').'/sql/diff.sql';
-    $this->logSection("propel-sql-diff", "executing file $filename");
+    $filename = sfConfig::get('sf_data_dir')."/sql/{$options['connection']}.diff.sql";
+    $this->logSection("sql-diff", "executing file $filename");
     $i = new dbInfo();
     $i->executeSql(file_get_contents($filename), Propel::getConnection($options['connection']));
   }
