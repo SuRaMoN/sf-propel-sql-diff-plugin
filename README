@@ -1,11 +1,11 @@
 = sfPropelSqlDiffPlugin =
 [[PageOutline]]
 
-sfPropelSqlDiff plugin generate diff.sql file, which contains difference beetween schema.yml and current database structure.
+sfPropelSqlDiff plugin generates database sql patch, which contains difference beetween schema.yml and current database structure.
 
 == Description ==
-It provides new symfony task - propel-build-sql-diff which will create file diff.sql with ALTER TABLE statements, whitch will make current database structure 
-exactly as it described schema.yml without deleting data in tables as it does propel-build-sql task.
+It provides new symfony task - propel:build-sql-diff which will create file propel.diff.sql with ALTER TABLE statements, whitch will make current database structure 
+exactly as it described in schema.yml without deleting data in tables as it does propel:build-sql task.
 
 Currently it handles:
  - creation and deletion of tables/fields/indexes/foreign keys
@@ -17,35 +17,22 @@ Plugin is in beta state now. It is tested only for mysql. You can discuss it at 
 
 After making changes in schema.yml
   {{{
-  symfony propel-build-sql-diff frontend
+  php symfony propel:build-sql-diff
   }}}
-(first parameter is application name, second, if not ommited, environment)[[BR]]
-Then you can find sql file at data/sql/diff.sql
 
-To execute diff.sql
+Then you can find sql file at data/sql/propel.diff.sql
+
+To execute propel.diff.sql
   {{{
-  symfony propel-insert-sql-diff frontend
+  php symfony propel:insert-sql-diff
   }}}
   
 To run model rebuild and apply database changes to database 
   {{{
-  symfony propel-build-all-diff frontend
+  php symfony propel:build-all-diff
   }}}
 
-== Changelog ==
-
-=== 0.1.3 ===
-
- * symfony 1.1 compatible
- 
-=== 0.1.2 ===
-
- * added task propel-build-all
- * fixed problem with short open tags
- * fixed problem with "foreign key constraint fails" error during diff.sql execution
- 
-=== 0.1.1 ===
-
- * added task propel-insert-sql-diff
- * fixed php notices
- * fixed problem with default values like ''
+You can also specify connection name if you have more than one database, application name, environment. For more info please take a look at
+  {{{
+  php symfony help propel:build-sql-diff
+  }}}
