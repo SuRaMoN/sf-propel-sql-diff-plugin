@@ -5,14 +5,15 @@ class dbInfo {
   public $debug = true;
 
   function loadFromDb($con) {
-    $stmt = $con->prepare("SHOW TABLES LIKE '%'");
+    $stmt = $con->prepare("SHOW FULL TABLES");
     $stmt->execute();
     $stmt->setFetchMode(PDO::FETCH_NUM);
 
     if($stmt->rowCount()==0) return false;
     while($row = $stmt->fetch()) {
-        $name = $row[0];
-        $this->tables[$name] = array();
+        if(strtoupper($row[1])=="BASE TABLE") {
+            $this->tables[$row[0]] = array();
+        }
     };
 
     foreach($this->tables as $table => $null) {
