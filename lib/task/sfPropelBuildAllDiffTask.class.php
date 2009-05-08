@@ -27,6 +27,8 @@ The task is equivalent to:
 
   [./symfony propel:insert-sql-diff|INFO]
   [./symfony propel:build-model|INFO]
+  [./symfony propel:build-forms|INFO]
+  [./symfony propel:build-filters|INFO]
 EOF;
   }
 
