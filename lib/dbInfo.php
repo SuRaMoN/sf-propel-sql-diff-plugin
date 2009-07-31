@@ -50,13 +50,13 @@ class dbInfo {
     $this->tables[$table]['fields'] = array();
     $this->tables[$table]['keys'] = array();
     $this->tables[$table]['fkeys'] = array();
-    
+
     if(preg_match('/type=(\w+)/i', $table_info, $matches)) {
         $this->tables[$table]['type'] = strtolower($matches[1]);
     } else {
         $this->tables[$table]['type'] = '';
     }
-    
+
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
     foreach($matches[1] as $key=>$value) {
       $this->getInfoFromPart($table, trim($value));
@@ -75,13 +75,13 @@ class dbInfo {
       if($type=='SMALLINT') $type = 'SMALLINT(6)';
       if($type=='INTEGER') $type = 'INT(11)';
       if($type=='BIGINT') $type = 'BIGINT(20)';
-      if($type=='BLOB') $type = 'TEXT';   //propel fix, blob is TEXT field with BINARY collation 
+      if($type=='BLOB') $type = 'TEXT';   //propel fix, blob is TEXT field with BINARY collation
       $type = str_replace('VARBINARY', 'VARCHAR', $type);
       $this->tables[$table]['fields'][$fieldname] = array(
         'code'    => $code,
         'type'    => $type,
-		'null'    => ((!isset($matches2[2]) || $matches2[2] != "NOT NULL") && (!isset($matches2[7]) || $matches2[7] != "NOT NULL")),
-		'default' => !empty($matches2[5]) ? $matches2[5] : ( !empty($matches2[6]) ? $matches2[6] : ''), 
+        'null'    => ((!isset($matches2[2]) || $matches2[2] != "NOT NULL") && (!isset($matches2[7]) || $matches2[7] != "NOT NULL")),
+        'default' => !empty($matches2[5]) ? $matches2[5] : ( !empty($matches2[6]) ? $matches2[6] : ''),
       );
     }
 
@@ -96,10 +96,10 @@ class dbInfo {
     elseif(preg_match("/CONSTRAINT\s+\`(.+)\`\s+FOREIGN KEY\s+\(\`(.+)\`\)\s+REFERENCES \`(.+)\` \(\`(.+)\`\)/mi", $part, $matches)) {
       $name = $matches[1];
       $this->tables[$table]['fkeys'][$name] = array(
-						'field' => $matches[2],
-						'ref_table' => $matches[3],
-						'ref_field' => $matches[4],
-						'code' => $part,
+                        'field' => $matches[2],
+                        'ref_table' => $matches[3],
+                        'ref_field' => $matches[4],
+                        'code' => $part,
       );
       if(preg_match('/ON DELETE (RESTRICT|CASCADE|SET NULL|NO ACTION)/i', $part, $matches)) {
         $this->tables[$table]['fkeys'][$name]['on_delete'] = strtoupper($matches[1]);
@@ -117,7 +117,7 @@ class dbInfo {
       throw new Exception("can't parse line '$part' in table $table");
     }
   }
-  
+
   function tableSupportsFkeys($tabletype) {
       return !in_array($tabletype, array('myisam', 'ndbcluster'));
   }
@@ -147,7 +147,7 @@ class dbInfo {
         $otherdata = @$this->tables[$tablename]['keys'][$field];
         $othercode = @$otherdata['code'];
         if($mycode and !$othercode) {
-          if($otherdata['type']=='PRIMARY') {
+          if($fielddata['type']=='PRIMARY') {
             $diff_sql .= "ALTER TABLE `$tablename` ADD PRIMARY KEY $mycode;\n";
           } else {
             $diff_sql .= "ALTER TABLE `$tablename` ADD {$fielddata['type']} INDEX `$field` $mycode;\n";
@@ -155,7 +155,7 @@ class dbInfo {
         };
       };
 
-      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) { 
+      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
           $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
@@ -166,7 +166,7 @@ class dbInfo {
         }
       };
     };
-    
+
     foreach($this->tables as $tablename=>$tabledata) {
 
       if(!isset($db_info2->tables[$tablename])) {
@@ -175,7 +175,7 @@ class dbInfo {
       }
 
       //drop, alter foreign key
-      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) { 
+      if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
           $otherfkname = $db_info2->get_fk_name_by_field($tablename, $data['field']);
@@ -251,29 +251,29 @@ class dbInfo {
     };
     return null;
   }
-  
+
   public function executeSql($sql, $connection) {
-  	$queries = $this->explodeSql($sql);
-  	foreach($queries as $query) {
-  	  $this->executeQuery($query, $connection);
-  	}
+      $queries = $this->explodeSql($sql);
+      foreach($queries as $query) {
+        $this->executeQuery($query, $connection);
+      }
   }
-  
+
   public function explodeSql($sql) {
     $result = array();
     preg_match_all('/([^\'";]+|\'[^\']*\'|"[^"]*")+;/i', $sql, $matches);
     foreach($matches[0] as $query) {
       $result[] = $query;
     }
-    return $result;    
+    return $result;
   }
-  
+
   public function executeQuery($query, $connection) {
     $stmt = $connection->prepare($query);
     $stmt->execute();
     return $stmt;
   }
-  
-  
+
+
 };
 ?>
