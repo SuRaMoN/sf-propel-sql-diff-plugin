@@ -69,7 +69,7 @@ class dbInfo {
       $fieldname = $matches[1];
       $code = $matches[2];
       $this->tables[$table]['fields'][$fieldname]['code'] = $code;
-      preg_match('/([^\s]+)\s*(NOT NULL)?\s*(default (\'([^\']*)\'|(\d+)))?\s*(NOT NULL)?/i', $code, $matches2);
+      preg_match('/([^\s]+)\s*(NOT NULL)?\s*(default (\'([^\']*)\'|(-?\d+)))?\s*(NOT NULL)?/i', $code, $matches2);
       $type = strtoupper($matches2[1]);
       if($type=='TINYINT') $type = 'TINYINT(4)';
       if($type=='SMALLINT') $type = 'SMALLINT(6)';
@@ -77,12 +77,34 @@ class dbInfo {
       if($type=='BIGINT') $type = 'BIGINT(20)';
       if($type=='BLOB') $type = 'TEXT';   //propel fix, blob is TEXT field with BINARY collation
       $type = str_replace('VARBINARY', 'VARCHAR', $type);
+      $type = str_replace('INTEGER', 'INT', $type);
       $this->tables[$table]['fields'][$fieldname] = array(
         'code'    => $code,
         'type'    => $type,
-        'null'    => ((!isset($matches2[2]) || $matches2[2] != "NOT NULL") && (!isset($matches2[7]) || $matches2[7] != "NOT NULL")),
-        'default' => !empty($matches2[5]) ? $matches2[5] : ( !empty($matches2[6]) ? $matches2[6] : ''),
       );
+      // null value
+      $this->tables[$table]['fields'][$fieldname]['null'] = true;
+      if (isset($matches2[2]) and $matches2[2] = "NOT NULL")
+      {
+        $this->tables[$table]['fields'][$fieldname]['null'] = false;
+      }
+      if (isset($matches2[7]) and $matches2[7] = "NOT NULL")
+      {
+        $this->tables[$table]['fields'][$fieldname]['null'] = false;
+      }
+
+      // default value
+      $this->tables[$table]['fields'][$fieldname]['default'] = "";
+      if (isset($matches2[6]) and $matches2[6] != "")
+      {
+        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2[6];
+      }
+      elseif (isset($matches2[5]))
+      {
+        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2[5];
+      }
+
+      $this->tables[$table]['fields'][$fieldname]['matches2'] = $matches2;
     }
 
     //get key codes
@@ -229,7 +251,6 @@ class dbInfo {
         if($mycode and !$othercode) {
           $diff_sql .= "ALTER TABLE `$tablename` DROP `$field`;\n";
         } elseif($fielddata['type'] != $otherdata['type']
-        or $fielddata['type'] != $otherdata['type']
         or $fielddata['null'] != $otherdata['null']
         or $fielddata['default'] != $otherdata['default']   ) {
           if($this->debug) {
