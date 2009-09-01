@@ -51,8 +51,8 @@ class dbInfo {
     $this->tables[$table]['keys'] = array();
     $this->tables[$table]['fkeys'] = array();
 
-    if(preg_match('/type=(\w+)/i', $table_info, $matches)) {
-        $this->tables[$table]['type'] = strtolower($matches[1]);
+    if(preg_match('/(type|engine)=(\w+)/i', $table_info, $matches)) {
+        $this->tables[$table]['type'] = strtolower($matches[2]);
     } else {
         $this->tables[$table]['type'] = '';
     }
@@ -69,7 +69,7 @@ class dbInfo {
       $fieldname = $matches[1];
       $code = $matches[2];
       $this->tables[$table]['fields'][$fieldname]['code'] = $code;
-      preg_match('/([^\s]+)\s*(NOT NULL)?\s*(default (\'([^\']*)\'|(-?\d+)))?\s*(NOT NULL)?/i', $code, $matches2);
+      $res = preg_match('/([^\s]+)\s*(NOT NULL)?\s*(default (\'([^\']*)\'|(-?\d+)))?\s*(NOT NULL)?/i', $code, $matches2);
       $type = strtoupper($matches2[1]);
       if($type=='TINYINT') $type = 'TINYINT(4)';
       if($type=='SMALLINT') $type = 'SMALLINT(6)';
@@ -84,11 +84,11 @@ class dbInfo {
       );
       // null value
       $this->tables[$table]['fields'][$fieldname]['null'] = true;
-      if (isset($matches2[2]) and $matches2[2] = "NOT NULL")
+      if (isset($matches2[2]) and $matches2[2] == "NOT NULL")
       {
         $this->tables[$table]['fields'][$fieldname]['null'] = false;
       }
-      if (isset($matches2[7]) and $matches2[7] = "NOT NULL")
+      if (isset($matches2[7]) and $matches2[7] == "NOT NULL")
       {
         $this->tables[$table]['fields'][$fieldname]['null'] = false;
       }
@@ -103,8 +103,6 @@ class dbInfo {
       {
         $this->tables[$table]['fields'][$fieldname]['default'] = $matches2[5];
       }
-
-      $this->tables[$table]['fields'][$fieldname]['matches2'] = $matches2;
     }
 
     //get key codes
@@ -145,17 +143,35 @@ class dbInfo {
   }
 
 
+  private function getTableTypeDiff($db_info2) {
+    $diff_sql = "";
+    foreach($db_info2->tables as $tablename=>$tabledata) {
+      //change table type
+      $old_table_type = $this->tables[$tablename]['type'];
+      if($tabledata['type']!=$old_table_type) {
+        $diff_sql .= "ALTER TABLE `$tablename` engine={$tabledata['type']};\n";
+      }
+    }
+    return $diff_sql;
+  }
+
+
   function getDiffWith(dbInfo $db_info2) {
 
     $diff_sql = '';
 
+    $diff_sql .= $this->getTableTypeDiff($db_info2);
+
+    //adding columns, indexes, etc
     foreach($db_info2->tables as $tablename=>$tabledata) {
 
+      //check for new table
       if(!isset($this->tables[$tablename])) {
         $diff_sql .= "\n".$db_info2->tables[$tablename]['create']."\n";
         continue;
       }
 
+      //check for new field
       foreach($tabledata['fields'] as $field=>$fielddata) {
         $mycode = $fielddata['code'];
         $othercode = @$this->tables[$tablename]['fields'][$field]['code'];
@@ -164,6 +180,7 @@ class dbInfo {
         };
       };
 
+      //check for new index
       if($tabledata['keys']) foreach($tabledata['keys'] as $field=>$fielddata) {
         $mycode = $fielddata['code'];
         $otherdata = @$this->tables[$tablename]['keys'][$field];
@@ -177,6 +194,7 @@ class dbInfo {
         };
       };
 
+      //check for new foreign key
       if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
@@ -189,8 +207,10 @@ class dbInfo {
       };
     };
 
+    //modifying and deleting columns, indexes, etc
     foreach($this->tables as $tablename=>$tabledata) {
 
+      //check table exists
       if(!isset($db_info2->tables[$tablename])) {
         $diff_sql .= "DROP TABLE `$tablename`;\n";
         continue;
