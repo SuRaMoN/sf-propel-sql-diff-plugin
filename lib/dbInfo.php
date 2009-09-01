@@ -146,9 +146,10 @@ class dbInfo {
   private function getTableTypeDiff($db_info2) {
     $diff_sql = "";
     foreach($db_info2->tables as $tablename=>$tabledata) {
+      if(empty($this->tables[$tablename])) continue;
       //change table type
       $old_table_type = $this->tables[$tablename]['type'];
-      if($tabledata['type']!=$old_table_type) {
+      if($this->tables[$tablename] && $tabledata['type']!=$old_table_type) {
         $diff_sql .= "ALTER TABLE `$tablename` engine={$tabledata['type']};\n";
       }
     }
