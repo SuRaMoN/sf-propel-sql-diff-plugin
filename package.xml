@@ -16,12 +16,12 @@
 		<email>smserg@bk.ru</email>
 		<active>yes</active>
 	</lead>
-	<packager>
+	<developer>
   <name>Patricio Mac Adden</name>
   <user>pmacadden</user>
   <email>pmacadden@cespi.unlp.edu.ar</email>
   <active>yes</active>
- </packager>
+ </developer>
 	<date>2011-02-25</date>
 	<version>
 		<release>0.3.0</release>
