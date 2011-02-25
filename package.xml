@@ -17,19 +17,37 @@
 		<active>yes</active>
 	</lead>
 	<developer>
-  <name>Patricio Mac Adden</name>
-  <user>pmacadden</user>
-  <email>pmacadden@cespi.unlp.edu.ar</email>
-  <active>yes</active>
- </developer>
+    <name>gray</name>
+    <user>gray</user>
+    <email>ggrraay@gmail.com</email>
+    <active>yes</active>
+  </developer>
+  <developer>
+    <name>drmikecrowe</name>
+    <user>drmikecrowe</user>
+    <email>mike@mikeandkellycrowe.com</email>
+    <active>yes</active>
+  </developer>
+	<developer>
+    <name>Patricio Mac Adden</name>
+    <user>pmacadden</user>
+    <email>pmacadden@cespi.unlp.edu.ar</email>
+    <active>yes</active>
+  </developer>
+  <developer>
+    <name>allyb</name>
+    <user>allyb</user>
+    <email>elaboosh@yahoo.com</email>
+    <active>yes</active>
+  </developer>
 	<date>2011-02-25</date>
 	<version>
-		<release>0.3.0</release>
-		<api>0.3.0</api>
+		<release>0.3.1</release>
+		<api>0.3.1</api>
 	</version>
 	<stability>
-    <release>stable</release>
-    <api>stable</api>
+    <release>beta</release>
+    <api>beta</api>
   </stability>
 	<license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
 	<notes>-</notes>
@@ -69,12 +87,12 @@
 	<changelog>
 	  <release>
 			<version>
-				<release>0.3.0</release>
-				<api>0.3.0</api>
+				<release>0.3.1</release>
+				<api>0.3.1</api>
 			</version>
 			<stability>
-				<release>stable</release>
-				<api>stable</api>
+				<release>beta</release>
+				<api>beta</api>
 			</stability>
 			<license uri="http://www.gnu.org/licenses/lgpl.html">LGPL</license>
 			<date>2011-02-25</date>
