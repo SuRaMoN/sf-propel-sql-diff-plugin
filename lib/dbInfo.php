@@ -282,6 +282,7 @@ class dbInfo {
       };
     };
 
+    if($diff_sql) $diff_sql = "SET FOREIGN_KEY_CHECKS=0;\n$diff_sql";
     return $diff_sql;
   }
 
