@@ -199,8 +199,7 @@ class dbInfo {
       if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
-          $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
-          $othercode = @$this->tables[$tablename]['fkeys'][$otherfkname]['code'];
+          $othercode = @$this->tables[$tablename]['fkeys'][$fkeyname]['code'];
           if($mycode && !$othercode) {
             $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
           };
@@ -221,12 +220,11 @@ class dbInfo {
       if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
-          $otherfkname = $db_info2->get_fk_name_by_field($tablename, $data['field']);
-          $othercode = @$db_info2->tables[$tablename]['fkeys'][$otherfkname]['code'];
+          $othercode = @$db_info2->tables[$tablename]['fkeys'][$fkeyname]['code'];
           if($mycode and !$othercode) {
             $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
           } else {
-            $data2 = $db_info2->tables[$tablename]['fkeys'][$otherfkname];
+            $data2 = $db_info2->tables[$tablename]['fkeys'][$fkeyname];
             if ($data['ref_table'] != $data2['ref_table'] ||
             $data['ref_field'] != $data2['ref_field'] ||
             $data['on_delete'] != $data2['on_delete'] ||
@@ -284,15 +282,6 @@ class dbInfo {
 
     if($diff_sql) $diff_sql = "SET FOREIGN_KEY_CHECKS=0;\n$diff_sql";
     return $diff_sql;
-  }
-
-  private function get_fk_name_by_field($tablename, $fieldname) {
-    if($this->tables[$tablename]['fkeys']) {
-      foreach($this->tables[$tablename]['fkeys'] as $fkeyname=>$data) {
-        if($data['field'] == $fieldname) return $fkeyname;
-      }
-    };
-    return null;
   }
 
   public function executeSql($sql, $connection) {
