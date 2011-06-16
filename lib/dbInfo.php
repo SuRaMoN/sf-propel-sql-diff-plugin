@@ -2,7 +2,7 @@
 
 class dbInfo {
   public $tables = array();
-  public $debug = true;
+  public $debug = false;
 
   function loadFromDb($con) {
     $stmt = $con->prepare("SHOW FULL TABLES");
@@ -163,6 +163,8 @@ class dbInfo {
 
     $diff_sql .= $this->getTableTypeDiff($db_info2);
 
+    $table_sql = array();
+
     //adding columns, indexes, etc
     foreach($db_info2->tables as $tablename=>$tabledata) {
 
@@ -177,7 +179,7 @@ class dbInfo {
         $mycode = $fielddata['code'];
         $othercode = @$this->tables[$tablename]['fields'][$field]['code'];
         if($mycode and !$othercode) {
-          $diff_sql .= "ALTER TABLE `$tablename` ADD `$field` $mycode;\n";
+          $table_sql[$tablename][] = "ADD `$field` $mycode";
         };
       };
 
@@ -188,9 +190,9 @@ class dbInfo {
         $othercode = @$otherdata['code'];
         if($mycode and !$othercode) {
           if($fielddata['type']=='PRIMARY') {
-            $diff_sql .= "ALTER TABLE `$tablename` ADD PRIMARY KEY $mycode;\n";
+            $table_sql[$tablename][] = "ADD PRIMARY KEY $mycode";
           } else {
-            $diff_sql .= "ALTER TABLE `$tablename` ADD {$fielddata['type']} INDEX `$field` $mycode;\n";
+            $table_sql[$tablename][] = "ADD {$fielddata['type']} INDEX `$field` $mycode";
           }
         };
       };
@@ -201,7 +203,7 @@ class dbInfo {
           $mycode = $data['code'];
           $othercode = @$this->tables[$tablename]['fkeys'][$fkeyname]['code'];
           if($mycode && !$othercode) {
-            $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
+            $table_sql[$tablename][] = "ADD {$mycode}";
           };
         }
       };
@@ -232,8 +234,8 @@ class dbInfo {
               if($this->debug) {
                 $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
               }
-              $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
-              $diff_sql .= "ALTER TABLE `$tablename` ADD {$othercode};\n";
+              $table_sql[$tablename][] = "DROP FOREIGN KEY `$fkeyname`";
+              $table_sql[$tablename][] = "ADD {$othercode}";
             }
           };
         };
@@ -254,11 +256,11 @@ class dbInfo {
             $diff_sql .= "/* old definition: {$fielddata['code']}\n   new definition: {$otherdata['code']} */\n";
           }
           if($fielddata['type']=='PRIMARY') {
-            $diff_sql .= "ALTER TABLE `$tablename` DROP PRIMARY KEY,";
+            $table_sql[$tablename][] = "DROP PRIMARY KEY";
           } else {
-            $diff_sql .= "ALTER TABLE `$tablename` DROP INDEX $field,";
+            $table_sql[$tablename][] = "DROP INDEX $field";
           }
-          $diff_sql .= "        ADD $ind_name ".($field?"`$field`":"")." {$otherdata['code']};\n";
+          $table_sql[$tablename][] = "ADD $ind_name ".($field?"`$field`":"")." {$otherdata['code']}";
         };
       };
 
@@ -275,10 +277,14 @@ class dbInfo {
           if($this->debug) {
             $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
           }
-          $diff_sql .= "ALTER TABLE `$tablename` CHANGE `$field` `$field` $othercode;\n";
+          $table_sql[$tablename][] = "CHANGE `$field` `$field` $othercode";
         };
       };
     };
+
+    foreach($table_sql as $table=>$statements) {
+    	$diff_sql .= "ALTER TABLE `$table` ".join(', ', $statements).";\n";
+    }
 
     if($diff_sql) $diff_sql = "SET FOREIGN_KEY_CHECKS=0;\n$diff_sql";
     return $diff_sql;
