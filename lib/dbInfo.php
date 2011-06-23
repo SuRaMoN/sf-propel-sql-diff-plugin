@@ -224,7 +224,7 @@ class dbInfo {
           $mycode = $data['code'];
           $othercode = @$db_info2->tables[$tablename]['fkeys'][$fkeyname]['code'];
           if($mycode and !$othercode) {
-            $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
+            $table_sql[$tablename][] = "DROP FOREIGN KEY `$fkeyname`";
           } else {
             $data2 = $db_info2->tables[$tablename]['fkeys'][$fkeyname];
             if ($data['ref_table'] != $data2['ref_table'] ||
@@ -247,9 +247,9 @@ class dbInfo {
         $ind_name = @$otherdata['type']=='PRIMARY'?'PRIMARY KEY':"{$otherdata['type']} INDEX";
         if($fielddata['code'] and !$otherdata['code']) {
           if($fielddata['type']=='PRIMARY') {
-            $diff_sql .= "ALTER TABLE `$tablename` DROP PRIMARY KEY;\n";
+            $table_sql[$tablename][] = "DROP PRIMARY KEY";
           } else {
-            $diff_sql .= "ALTER TABLE `$tablename` DROP INDEX $field;\n";
+            $table_sql[$tablename][] = "DROP INDEX $field";
           }
         } elseif($fielddata['fields'] != $otherdata['fields'] or $fielddata['type']!=$otherdata['type']) {
           if($this->debug) {
@@ -270,7 +270,7 @@ class dbInfo {
         $otherdata = @$db_info2->tables[$tablename]['fields'][$field];
         $othercode = @$otherdata['code'];
         if($mycode and !$othercode) {
-          $diff_sql .= "ALTER TABLE `$tablename` DROP `$field`;\n";
+          $table_sql[$tablename][] = "DROP `$field`";
         } elseif($fielddata['type'] != $otherdata['type']
         or $fielddata['null'] != $otherdata['null']
         or $fielddata['default'] != $otherdata['default']   ) {
