@@ -224,7 +224,7 @@ class dbInfo {
           $mycode = $data['code'];
           $othercode = @$db_info2->tables[$tablename]['fkeys'][$fkeyname]['code'];
           if($mycode and !$othercode) {
-            $table_sql[$tablename][] = "DROP FOREIGN KEY `$fkeyname`";
+            $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
           } else {
             $data2 = $db_info2->tables[$tablename]['fkeys'][$fkeyname];
             if ($data['ref_table'] != $data2['ref_table'] ||
@@ -234,7 +234,7 @@ class dbInfo {
               if($this->debug) {
                 $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
               }
-              $table_sql[$tablename][] = "DROP FOREIGN KEY `$fkeyname`";
+              $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
               $table_sql[$tablename][] = "ADD {$othercode}";
             }
           };
