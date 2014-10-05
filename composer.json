@@ -1,0 +1,5 @@
+{
+    "name": "suramon/sf-propel-sql-diff-plugin",
+    "description": "Generate diff.sql file, which contains difference between schema.yml and current database structure",
+    "license": "LGPL"
+}
