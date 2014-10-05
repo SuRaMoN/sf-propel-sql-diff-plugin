@@ -2,7 +2,7 @@
 
 class dbInfo {
   public $tables = array();
-  public $debug = false;
+  public $debug = true;
 
   function loadFromDb($con) {
     $stmt = $con->prepare("SHOW FULL TABLES");
@@ -57,6 +57,18 @@ class dbInfo {
         $this->tables[$table]['type'] = '';
     }
 
+    if(preg_match('/ENGINE.*(DEFAULT CHARSET|CHARACTER SET)(=|\s+)["\']?(?P<value>[A-Za-z0-9_]+)/i', $table_info, $matches)) {
+        $this->tables[$table]['charset'] = strtolower($matches['value']);
+    } else {
+        $this->tables[$table]['charset'] = '';
+    }
+
+    if(preg_match('/ENGINE.*COLLATE(=|\s+)["\']?(?P<value>[A-Za-z0-9_]+)/i', $table_info, $matches)) {
+        $this->tables[$table]['collate'] = strtolower($matches['value']);
+    } else {
+        $this->tables[$table]['collate'] = '';
+    }
+
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
     foreach($matches[1] as $key=>$value) {
       $this->getInfoFromPart($table, trim($value));
@@ -69,8 +81,15 @@ class dbInfo {
       $fieldname = $matches[1];
       $code = $matches[2];
       $this->tables[$table]['fields'][$fieldname]['code'] = $code;
-      $res = preg_match('/([^\s]+)\s*(NOT NULL)?\s*(default (\'([^\']*)\'|(-?\d+)))?\s*(NOT NULL)?/i', $code, $matches2);
-      $type = strtoupper($matches2[1]);
+      $res = preg_match('/' .
+        '(?P<type>[^\s]+)\s*' .
+        '(?P<charset>CHARACTER SET (?P<charsetValue>[^ ]+))?\s*' .
+        '(?P<collate>COLLATE (?P<collateValue>[^ ]+))?\s*' .
+        '(?P<nullable>NOT NULL)?\s*' .
+        '(?P<default>default (\'(?P<defaultString>[^\']*)\'|(?P<defaultConst>-?\d+)))?\s*' .
+        '(?P<nullable2>NOT NULL)?' .
+        '/i', $code, $matches2);
+      $type = strtoupper($matches2['type']);
       if($type=='TINYINT') $type = 'TINYINT(4)';
       if($type=='SMALLINT') $type = 'SMALLINT(6)';
       if($type=='INTEGER') $type = 'INT(11)';
@@ -84,24 +103,27 @@ class dbInfo {
       );
       // null value
       $this->tables[$table]['fields'][$fieldname]['null'] = true;
-      if (isset($matches2[2]) and $matches2[2] == "NOT NULL")
+      if (isset($matches2['nullable']) and $matches2['nullable'] == "NOT NULL")
       {
         $this->tables[$table]['fields'][$fieldname]['null'] = false;
       }
-      if (isset($matches2[7]) and $matches2[7] == "NOT NULL")
+      if (isset($matches2['nullable2']) and $matches2['nullable2'] == "NOT NULL")
       {
         $this->tables[$table]['fields'][$fieldname]['null'] = false;
       }
 
+      $this->tables[$table]['fields'][$fieldname]['collate'] = array_key_exists('collateValue', $matches2) ? $matches2['collateValue'] : '';
+      $this->tables[$table]['fields'][$fieldname]['charset'] = array_key_exists('charsetValue', $matches2) ? $matches2['charsetValue'] : '';
+
       // default value
       $this->tables[$table]['fields'][$fieldname]['default'] = "";
-      if (isset($matches2[6]) and $matches2[6] != "")
+      if (isset($matches2['defaultConst']) and $matches2['defaultConst'] != "")
       {
-        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2[6];
+        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2['defaultConst'];
       }
-      elseif (isset($matches2[5]))
+      elseif (isset($matches2['defaultString']))
       {
-        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2[5];
+        $this->tables[$table]['fields'][$fieldname]['default'] = $matches2['defaultString'];
       }
     }
 
@@ -148,9 +170,15 @@ class dbInfo {
     foreach($db_info2->tables as $tablename=>$tabledata) {
       if(empty($this->tables[$tablename])) continue;
       //change table type
-      $old_table_type = $this->tables[$tablename]['type'];
-      if($this->tables[$tablename] && $tabledata['type']!=$old_table_type) {
+      if($this->tables[$tablename] && $tabledata['type']!=$this->tables[$tablename]['type']) {
         $diff_sql .= "ALTER TABLE `$tablename` engine={$tabledata['type']};\n";
+      }
+      if($this->tables[$tablename] && $tabledata['charset'] != '' && $tabledata['charset']!=$this->tables[$tablename]['charset']) {
+        $diff_sql .= "ALTER TABLE `$tablename` CHANGE DEFAULT CHARACTER SET {$tabledata['charset']}";
+		if($tabledata['collate'] != '' && $tabledata['collate']!=$this->tables[$tablename]['collate']) {
+          $diff_sql .= "COLLATE {$tabledata['collate']}";
+		}
+		$diff_sql.=";\n";
       }
     }
     return $diff_sql;
@@ -162,8 +190,6 @@ class dbInfo {
     $diff_sql = '';
 
     $diff_sql .= $this->getTableTypeDiff($db_info2);
-
-    $table_sql = array();
 
     //adding columns, indexes, etc
     foreach($db_info2->tables as $tablename=>$tabledata) {
@@ -179,7 +205,7 @@ class dbInfo {
         $mycode = $fielddata['code'];
         $othercode = @$this->tables[$tablename]['fields'][$field]['code'];
         if($mycode and !$othercode) {
-          $table_sql[$tablename][] = "ADD `$field` $mycode";
+          $diff_sql .= "ALTER TABLE `$tablename` ADD `$field` $mycode;\n";
         };
       };
 
@@ -190,9 +216,9 @@ class dbInfo {
         $othercode = @$otherdata['code'];
         if($mycode and !$othercode) {
           if($fielddata['type']=='PRIMARY') {
-            $table_sql[$tablename][] = "ADD PRIMARY KEY $mycode";
+            $diff_sql .= "ALTER TABLE `$tablename` ADD PRIMARY KEY $mycode;\n";
           } else {
-            $table_sql[$tablename][] = "ADD {$fielddata['type']} INDEX `$field` $mycode";
+            $diff_sql .= "ALTER TABLE `$tablename` ADD {$fielddata['type']} INDEX `$field` $mycode;\n";
           }
         };
       };
@@ -201,9 +227,10 @@ class dbInfo {
       if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
-          $othercode = @$this->tables[$tablename]['fkeys'][$fkeyname]['code'];
+          $otherfkname = $this->get_fk_name_by_field($tablename, $data['field']);
+          $othercode = @$this->tables[$tablename]['fkeys'][$otherfkname]['code'];
           if($mycode && !$othercode) {
-            $table_sql[$tablename][] = "ADD {$mycode}";
+            $diff_sql .= "ALTER TABLE `$tablename` ADD {$mycode};\n";
           };
         }
       };
@@ -222,11 +249,12 @@ class dbInfo {
       if($tabledata['fkeys'] && $this->tableSupportsFkeys($tabledata['type'])) {
         foreach($tabledata['fkeys'] as $fkeyname=>$data) {
           $mycode = $data['code'];
-          $othercode = @$db_info2->tables[$tablename]['fkeys'][$fkeyname]['code'];
+          $otherfkname = $db_info2->get_fk_name_by_field($tablename, $data['field']);
+          $othercode = @$db_info2->tables[$tablename]['fkeys'][$otherfkname]['code'];
           if($mycode and !$othercode) {
             $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
           } else {
-            $data2 = $db_info2->tables[$tablename]['fkeys'][$fkeyname];
+            $data2 = $db_info2->tables[$tablename]['fkeys'][$otherfkname];
             if ($data['ref_table'] != $data2['ref_table'] ||
             $data['ref_field'] != $data2['ref_field'] ||
             $data['on_delete'] != $data2['on_delete'] ||
@@ -235,7 +263,7 @@ class dbInfo {
                 $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
               }
               $diff_sql .= "ALTER TABLE `$tablename` DROP FOREIGN KEY `$fkeyname`;\n";
-              $table_sql[$tablename][] = "ADD {$othercode}";
+              $diff_sql .= "ALTER TABLE `$tablename` ADD {$othercode};\n";
             }
           };
         };
@@ -247,20 +275,20 @@ class dbInfo {
         $ind_name = @$otherdata['type']=='PRIMARY'?'PRIMARY KEY':"{$otherdata['type']} INDEX";
         if($fielddata['code'] and !$otherdata['code']) {
           if($fielddata['type']=='PRIMARY') {
-            $table_sql[$tablename][] = "DROP PRIMARY KEY";
+            $diff_sql .= "ALTER TABLE `$tablename` DROP PRIMARY KEY;\n";
           } else {
-            $table_sql[$tablename][] = "DROP INDEX $field";
+            $diff_sql .= "ALTER TABLE `$tablename` DROP INDEX $field;\n";
           }
         } elseif($fielddata['fields'] != $otherdata['fields'] or $fielddata['type']!=$otherdata['type']) {
           if($this->debug) {
             $diff_sql .= "/* old definition: {$fielddata['code']}\n   new definition: {$otherdata['code']} */\n";
           }
           if($fielddata['type']=='PRIMARY') {
-            $table_sql[$tablename][] = "DROP PRIMARY KEY";
+            $diff_sql .= "ALTER TABLE `$tablename` DROP PRIMARY KEY,";
           } else {
-            $table_sql[$tablename][] = "DROP INDEX $field";
+            $diff_sql .= "ALTER TABLE `$tablename` DROP INDEX $field,";
           }
-          $table_sql[$tablename][] = "ADD $ind_name ".($field?"`$field`":"")." {$otherdata['code']}";
+          $diff_sql .= "        ADD $ind_name ".($field?"`$field`":"")." {$otherdata['code']};\n";
         };
       };
 
@@ -270,24 +298,30 @@ class dbInfo {
         $otherdata = @$db_info2->tables[$tablename]['fields'][$field];
         $othercode = @$otherdata['code'];
         if($mycode and !$othercode) {
-          $table_sql[$tablename][] = "DROP `$field`";
+          $diff_sql .= "ALTER TABLE `$tablename` DROP `$field`;\n";
         } elseif($fielddata['type'] != $otherdata['type']
         or $fielddata['null'] != $otherdata['null']
+        or $fielddata['charset'] != $otherdata['charset']
+        or $fielddata['collate'] != $otherdata['collate']
         or $fielddata['default'] != $otherdata['default']   ) {
           if($this->debug) {
             $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
           }
-          $table_sql[$tablename][] = "CHANGE `$field` `$field` $othercode";
+          $diff_sql .= "ALTER TABLE `$tablename` CHANGE `$field` `$field` $othercode;\n";
         };
       };
     };
 
-    foreach($table_sql as $table=>$statements) {
-    	$diff_sql .= "ALTER TABLE `$table` ".join(', ', $statements).";\n";
-    }
-
-    if($diff_sql) $diff_sql = "SET FOREIGN_KEY_CHECKS=0;\n$diff_sql";
     return $diff_sql;
+  }
+
+  private function get_fk_name_by_field($tablename, $fieldname) {
+    if($this->tables[$tablename]['fkeys']) {
+      foreach($this->tables[$tablename]['fkeys'] as $fkeyname=>$data) {
+        if($data['field'] == $fieldname) return $fkeyname;
+      }
+    };
+    return null;
   }
 
   public function executeSql($sql, $connection) {
