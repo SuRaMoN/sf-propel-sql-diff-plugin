@@ -174,9 +174,9 @@ class dbInfo {
         $diff_sql .= "ALTER TABLE `$tablename` engine={$tabledata['type']};\n";
       }
       if($this->tables[$tablename] && $tabledata['charset'] != '' && $tabledata['charset']!=$this->tables[$tablename]['charset']) {
-        $diff_sql .= "ALTER TABLE `$tablename` CHANGE DEFAULT CHARACTER SET {$tabledata['charset']}";
+        $diff_sql .= "ALTER TABLE `$tablename` DEFAULT CHARACTER SET {$tabledata['charset']}";
 		if($tabledata['collate'] != '' && $tabledata['collate']!=$this->tables[$tablename]['collate']) {
-          $diff_sql .= "COLLATE {$tabledata['collate']}";
+          $diff_sql .= " COLLATE {$tabledata['collate']}";
 		}
 		$diff_sql.=";\n";
       }
