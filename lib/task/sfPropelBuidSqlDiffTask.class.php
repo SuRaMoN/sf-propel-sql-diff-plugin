@@ -11,6 +11,8 @@ class sfPropelBuildSqlDiffTask extends sfPropelBaseTask
   {
     $this->addOptions(array(
       new sfCommandOption('application', null, sfCommandOption::PARAMETER_REQUIRED, 'The application name'),
+      new sfCommandOption('revert', null, sfCommandOption::PARAMETER_NONE, 'Revert sql diff'),
+      new sfCommandOption('dont-build-sql', null, sfCommandOption::PARAMETER_NONE, 'Dont build sql file'),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
       new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
     ));
@@ -35,10 +37,12 @@ EOF;
   {
     $databaseManager = new sfDatabaseManager($this->configuration);
     $connection = $databaseManager->getDatabase($options['connection'] ? $options['connection'] : null)->getConnection();
-        
-    $buildSql = new sfPropelBuildSqlTask($this->dispatcher, $this->formatter);
-    $buildSql->setCommandApplication($this->commandApplication);
-    $buildSql->run();
+
+	if(! $options['dont-build-sql']) {
+      $buildSql = new sfPropelBuildSqlTask($this->dispatcher, $this->formatter);
+      $buildSql->setCommandApplication($this->commandApplication);
+      $buildSql->run();
+	}
 
     $this->logSection("sql-diff", "building database patch");
     
@@ -56,6 +60,12 @@ EOF;
             $i2->loadFromFile("$sqlDir/$sqlfile");
         }
     }
+
+	if($options['revert']) {
+	  $t = $i;
+	  $i = $i2;
+	  $i2 = $t;
+	}
     
     $diff = $i->getDiffWith($i2);
 
@@ -69,4 +79,3 @@ EOF;
   }
 }
 
-?>

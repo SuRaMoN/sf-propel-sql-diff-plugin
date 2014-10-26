@@ -173,7 +173,12 @@ class dbInfo {
       if($this->tables[$tablename] && $tabledata['type']!=$this->tables[$tablename]['type']) {
         $diff_sql .= "ALTER TABLE `$tablename` engine={$tabledata['type']};\n";
       }
-      if($this->tables[$tablename] && $tabledata['charset'] != '' && $tabledata['charset']!=$this->tables[$tablename]['charset']) {
+      if(
+		  $this->tables[$tablename] && $tabledata['charset'] != ''
+		  && (
+		  	$tabledata['charset']!=$this->tables[$tablename]['charset']
+			|| ($tabledata['collate'] != '' && $tabledata['collate']!=$this->tables[$tablename]['collate'])
+		 )) {
         $diff_sql .= "ALTER TABLE `$tablename` DEFAULT CHARACTER SET {$tabledata['charset']}";
 		if($tabledata['collate'] != '' && $tabledata['collate']!=$this->tables[$tablename]['collate']) {
           $diff_sql .= " COLLATE {$tabledata['collate']}";
