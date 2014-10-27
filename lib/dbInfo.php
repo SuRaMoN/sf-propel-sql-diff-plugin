@@ -5,14 +5,16 @@ class dbInfo {
   public $debug = true;
 
   function loadFromDb($con) {
-    $stmt = $con->prepare("SHOW FULL TABLES");
+    $stmt = $con->prepare("select TABLE_NAME, TABLE_TYPE, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = DATABASE();");
     $stmt->execute();
-    $stmt->setFetchMode(PDO::FETCH_NUM);
+    $stmt->setFetchMode(PDO::FETCH_BOTH);
 
     if($stmt->rowCount()==0) return false;
     while($row = $stmt->fetch()) {
-        if(strtoupper($row[1])=="BASE TABLE") {
-            $this->tables[$row[0]] = array();
+        if(strtoupper($row['TABLE_TYPE'])=="BASE TABLE") {
+            $this->tables[$row['TABLE_NAME']] = array(
+				'collate' => $row['TABLE_COLLATION'],
+			);
         }
     };
 
@@ -66,7 +68,7 @@ class dbInfo {
     if(preg_match('/ENGINE.*COLLATE(=|\s+)["\']?(?P<value>[A-Za-z0-9_]+)/i', $table_info, $matches)) {
         $this->tables[$table]['collate'] = strtolower($matches['value']);
     } else {
-        $this->tables[$table]['collate'] = '';
+        $this->tables[$table]['collate'] = array_key_exists('collate', $this->tables[$table]) ? $this->tables[$table]['collate'] : '';
     }
 
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);
@@ -112,7 +114,11 @@ class dbInfo {
         $this->tables[$table]['fields'][$fieldname]['null'] = false;
       }
 
-      $this->tables[$table]['fields'][$fieldname]['collate'] = array_key_exists('collateValue', $matches2) ? $matches2['collateValue'] : '';
+      if(array_key_exists('collateValue', $matches2) && '' != $matches2['collateValue']) {
+        $this->tables[$table]['fields'][$fieldname]['collate'] = $matches2['collateValue'];
+      } else {
+        $this->tables[$table]['fields'][$fieldname]['collate'] = array_key_exists('collate', $this->tables[$table]) ? $this->tables[$table]['collate'] : '';
+      }
       $this->tables[$table]['fields'][$fieldname]['charset'] = array_key_exists('charsetValue', $matches2) ? $matches2['charsetValue'] : '';
 
       // default value
