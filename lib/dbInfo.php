@@ -121,6 +121,11 @@ class dbInfo {
       }
       $this->tables[$table]['fields'][$fieldname]['charset'] = array_key_exists('charsetValue', $matches2) ? $matches2['charsetValue'] : '';
 
+      if($this->isNoTextualType($type)) {
+        $this->tables[$table]['fields'][$fieldname]['collate'] = '';
+		$this->tables[$table]['fields'][$fieldname]['charset'] = '';
+      }
+
       // default value
       $this->tables[$table]['fields'][$fieldname]['default'] = "";
       if (isset($matches2['defaultConst']) and $matches2['defaultConst'] != "")
@@ -164,6 +169,11 @@ class dbInfo {
     else {
       throw new Exception("can't parse line '$part' in table $table");
     }
+  }
+
+  function isNoTextualType($tableType) {
+    $tableType = strtolower($tableType);
+    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^int\(.*\)$/', $tableType);
   }
 
   function tableSupportsFkeys($tabletype) {
