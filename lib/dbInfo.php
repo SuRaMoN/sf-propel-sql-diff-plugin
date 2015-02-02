@@ -173,7 +173,7 @@ class dbInfo {
 
   function isNoTextualType($tableType) {
     $tableType = strtolower($tableType);
-    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^int\(.*\)$/', $tableType);
+    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^int|decimal\(.*\)$/', $tableType);
   }
 
   function tableSupportsFkeys($tabletype) {
