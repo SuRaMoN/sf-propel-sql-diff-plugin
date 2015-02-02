@@ -173,7 +173,7 @@ class dbInfo {
 
   function isNoTextualType($tableType) {
     $tableType = strtolower($tableType);
-    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^int|decimal\(.*\)$/', $tableType);
+    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^(int|decimal|double)(\(.*\))?$/', $tableType);
   }
 
   function tableSupportsFkeys($tabletype) {
@@ -321,10 +321,10 @@ class dbInfo {
         if($mycode and !$othercode) {
           $diff_sql .= "ALTER TABLE `$tablename` DROP `$field`;\n";
         } elseif($fielddata['type'] != $otherdata['type']
-        or $fielddata['null'] != $otherdata['null']
-        or $fielddata['charset'] != $otherdata['charset']
-        or $fielddata['collate'] != $otherdata['collate']
-        or $fielddata['default'] != $otherdata['default']   ) {
+        || $fielddata['null'] != $otherdata['null']
+        || $fielddata['charset'] != $otherdata['charset']
+        || $fielddata['collate'] != $otherdata['collate']
+        || $fielddata['default'] != $otherdata['default']   ) {
           if($this->debug) {
             $diff_sql .= "/* old definition: $mycode\n   new definition: $othercode */\n";
           }
