@@ -12,8 +12,13 @@ class dbInfo {
     if($stmt->rowCount()==0) return false;
     while($row = $stmt->fetch()) {
         if(strtoupper($row['TABLE_TYPE'])=="BASE TABLE") {
+			$columnMeta = array();
+			foreach($con->query("show full columns in `{$row['TABLE_NAME']}`")->fetchAll() as $columnMetaInfo) {
+				$columnMeta[$columnMetaInfo['Field']] = $columnMetaInfo;
+			}
             $this->tables[$row['TABLE_NAME']] = array(
 				'collate' => $row['TABLE_COLLATION'],
+				'columnMeta' => $columnMeta,
 			);
         }
     };
@@ -84,9 +89,10 @@ class dbInfo {
       $code = $matches[2];
       $this->tables[$table]['fields'][$fieldname]['code'] = $code;
       $res = preg_match('/' .
-        '(?P<type>[^\s]+)\s*' .
+        '(?P<type>([^\s(]|(\(([^)\']|(\'[^\']*\'))*\)))+)\s*' .
         '(?P<charset>CHARACTER SET (?P<charsetValue>[^ ]+))?\s*' .
         '(?P<collate>COLLATE (?P<collateValue>[^ ]+))?\s*' .
+        '(?P<comment>COMMENT \'(?P<commentValue>.*?)\')?\s*' .
         '(?P<nullable>NOT NULL)?\s*' .
         '(?P<default>default (\'(?P<defaultString>[^\']*)\'|(?P<defaultConst>-?\d+)))?\s*' .
         '(?P<nullable2>NOT NULL)?' .
@@ -116,10 +122,17 @@ class dbInfo {
 
       if(array_key_exists('collateValue', $matches2) && '' != $matches2['collateValue']) {
         $this->tables[$table]['fields'][$fieldname]['collate'] = $matches2['collateValue'];
+      } else if(array_key_exists('columnMeta', $this->tables[$table])) {
+        $this->tables[$table]['fields'][$fieldname]['collate'] = $this->tables[$table]['columnMeta'][$fieldname]['Collation'];
       } else {
         $this->tables[$table]['fields'][$fieldname]['collate'] = array_key_exists('collate', $this->tables[$table]) ? $this->tables[$table]['collate'] : '';
       }
-      $this->tables[$table]['fields'][$fieldname]['charset'] = array_key_exists('charsetValue', $matches2) ? $matches2['charsetValue'] : '';
+
+      if(array_key_exists('charsetValue', $matches2) && '' != $matches2['charsetValue']) {
+        $this->tables[$table]['fields'][$fieldname]['charset'] = $matches2['charsetValue'];
+      } else {
+        $this->tables[$table]['fields'][$fieldname]['charset'] = array_key_exists('charset', $this->tables[$table]) ? $this->tables[$table]['charset'] : '';
+      }
 
       if($this->isNoTextualType($type)) {
         $this->tables[$table]['fields'][$fieldname]['collate'] = '';
@@ -173,7 +186,7 @@ class dbInfo {
 
   function isNoTextualType($tableType) {
     $tableType = strtolower($tableType);
-    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^(int|decimal|double)(\(.*\))?$/', $tableType);
+    return in_array($tableType, array('date', 'timestamp', 'datetime')) || preg_match('/^(float|longblob|tinyint|bigint|int|decimal|double)(\(.*\))?$/', $tableType);
   }
 
   function tableSupportsFkeys($tabletype) {
