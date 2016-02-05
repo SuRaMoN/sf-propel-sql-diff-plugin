@@ -15,6 +15,7 @@ class sfPropelBuildSqlDiffTask extends sfPropelBaseTask
       new sfCommandOption('dont-build-sql', null, sfCommandOption::PARAMETER_NONE, 'Dont build sql file'),
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
       new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
+      new sfCommandOption('compare-connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The compare connection name', null),
     ));
           
     $this->aliases = array('propel-build-sql-diff');
@@ -37,6 +38,9 @@ EOF;
   {
     $databaseManager = new sfDatabaseManager($this->configuration);
     $connection = $databaseManager->getDatabase($options['connection'] ? $options['connection'] : null)->getConnection();
+    if(null === $options['compare-connection']) {
+      $options['compare-connection'] = $options['connection'];
+    }
 
 	if(! $options['dont-build-sql']) {
       $buildSql = new sfPropelBuildSqlTask($this->dispatcher, $this->formatter);
@@ -56,7 +60,7 @@ EOF;
     foreach($dbmap as $mapline) {
         if($mapline[0]=='#') continue; //it is a comment
         list($sqlfile, $dbname) = explode('=', trim($mapline));
-        if($dbname == $options['connection']) {
+        if($dbname == $options['compare-connection']) {
             $i2->loadFromFile("$sqlDir/$sqlfile");
         }
     }
