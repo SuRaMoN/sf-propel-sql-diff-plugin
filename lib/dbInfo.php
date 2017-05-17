@@ -3,6 +3,8 @@
 class dbInfo {
   public $tables = array();
   public $debug = true;
+  public $defaultCharset;
+  public $defaultCollate;
 
   function loadFromDb($con) {
     $stmt = $con->prepare("select TABLE_NAME, TABLE_TYPE, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = DATABASE();");
@@ -66,14 +68,22 @@ class dbInfo {
 
     if(preg_match('/ENGINE.*(DEFAULT CHARSET|CHARACTER SET)(=|\s+)["\']?(?P<value>[A-Za-z0-9_]+)/i', $table_info, $matches)) {
         $this->tables[$table]['charset'] = strtolower($matches['value']);
+    } elseif(array_key_exists('charset', $this->tables[$table])) {
+        $this->tables[$table]['charset'] = $this->tables[$table]['charset'];
+    } elseif(null !== $this->defaultCharset) {
+        $this->tables[$table]['charset'] = $this->defaultCharset;
     } else {
         $this->tables[$table]['charset'] = '';
     }
 
     if(preg_match('/ENGINE.*COLLATE(=|\s+)["\']?(?P<value>[A-Za-z0-9_]+)/i', $table_info, $matches)) {
         $this->tables[$table]['collate'] = strtolower($matches['value']);
+    } elseif(array_key_exists('collate', $this->tables[$table])) {
+        $this->tables[$table]['collate'] = $this->tables[$table]['collate'];
+    } elseif(null !== $this->defaultCollate) {
+        $this->tables[$table]['collate'] = $this->defaultCollate;
     } else {
-        $this->tables[$table]['collate'] = array_key_exists('collate', $this->tables[$table]) ? $this->tables[$table]['collate'] : '';
+        $this->tables[$table]['collate'] = '';
     }
 
     preg_match_all('/\s*(([^,\'"\(]+|\'[^\']*\'|"[^"]*"|\(([^\(\)]|\([^\(\)]*\))*\))+)\s*(,|$)/', $code, $matches);

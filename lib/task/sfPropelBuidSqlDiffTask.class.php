@@ -16,6 +16,8 @@ class sfPropelBuildSqlDiffTask extends sfPropelBaseTask
       new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
       new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'propel'),
       new sfCommandOption('compare-connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The compare connection name', null),
+      new sfCommandOption('default-charset', null, sfCommandOption::PARAMETER_REQUIRED, 'Default charset', null),
+      new sfCommandOption('default-collate', null, sfCommandOption::PARAMETER_REQUIRED, 'Default collate', null),
     ));
           
     $this->aliases = array('propel-build-sql-diff');
@@ -54,6 +56,8 @@ EOF;
     $i->loadFromDb(Propel::getConnection($options['connection']));
 
     $i2 = new dbInfo();
+    $i2->defaultCharset = $options['default-charset'];
+    $i2->defaultCollate = $options['default-collate'];
     
     $sqlDir = sfConfig::get('sf_data_dir').'/sql';
     $dbmap = file("$sqlDir/sqldb.map");
